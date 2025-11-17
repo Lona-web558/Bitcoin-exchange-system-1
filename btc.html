@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoExchange - Bitcoin Trading Platform</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #f8f9fa;
+            --bg-card: #ffffff;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .card-header {
+            background: #f8f9fa;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+        }
+
+        .price-display {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+
+        .price-change {
+            font-size: 1.2rem;
+            padding: 5px 12px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .price-up {
+            color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .price-down {
+            color: var(--accent-red);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .btn-buy {
+            background: var(--accent-green);
+            border: none;
+            font-weight: 600;
+        }
+
+        .btn-buy:hover {
+            background: #059669;
+        }
+
+        .btn-sell {
+            background: var(--accent-red);
+            border: none;
+            font-weight: 600;
+        }
+
+        .btn-sell:hover {
+            background: #dc2626;
+        }
+
+        .order-book-item {
+            padding: 8px;
+            border-bottom: 1px solid rgba(45, 55, 72, 0.5);
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+        }
+
+        .order-book-item:hover {
+            background: #f3f4f6;
+        }
+
+        .buy-order {
+            border-left: 3px solid var(--accent-green);
+        }
+
+        .sell-order {
+            border-left: 3px solid var(--accent-red);
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+
+        .form-control, .form-select {
+            background: #f9fafb;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: #ffffff;
+            border-color: var(--accent-blue);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+        }
+
+        .table {
+            color: var(--text-primary);
+        }
+
+        .table-dark {
+            --bs-table-bg: #f9fafb;
+            --bs-table-border-color: var(--border-color);
+            --bs-table-color: var(--text-primary);
+        }
+
+        .chart-container {
+            height: 300px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .chart-bar {
+            width: 30px;
+            background: linear-gradient(180deg, var(--accent-blue), var(--accent-green));
+            border-radius: 4px 4px 0 0;
+            transition: all 0.3s ease;
+        }
+
+        .chart-bar:hover {
+            opacity: 0.8;
+            transform: scaleY(1.05);
+        }
+
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1050;
+            min-width: 300px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="fab fa-bitcoin"></i> CryptoExchange</a>
+            <div class="d-flex align-items-center">
+                <span class="me-3"><i class="fas fa-user-circle"></i> User Balance: $<span id="userBalance">10000.00</span></span>
+                <span><i class="fab fa-bitcoin"></i> BTC: <span id="userBTC">0.5000</span></span>
+            </div>
+        </div>
+    </nav>
+
+    <div id="notificationContainer"></div>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Left Column - Price & Chart -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h6 class="text-secondary">Bitcoin Price (USD)</h6>
+                        <div class="price-display" id="currentPrice">$45,230.50</div>
+                        <div class="price-change price-up mt-2" id="priceChange">
+                            <i class="fas fa-arrow-up"></i> +2.45%
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-secondary">24h High: $<span id="high24h">46100.00</span></small>
+                            <small class="text-secondary ms-3">24h Low: $<span id="low24h">44800.00</span></small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-line"></i> Price Chart (24h)
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" id="priceChart"></div>
+                    </div>
+                </div>
+
+                <div class="card balance-card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6 stat-card border-end">
+                                <div class="stat-value">$<span id="usdBalance">10000</span></div>
+                                <div class="stat-label">USD Balance</div>
+                            </div>
+                            <div class="col-6 stat-card">
+                                <div class="stat-value"><span id="btcBalance">0.5000</span></div>
+                                <div class="stat-label">BTC Balance</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Middle Column - Trading -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-exchange-alt"></i> Trade Bitcoin
+                    </div>
+                    <div class="card-body">
+                        <ul class="nav nav-pills mb-3" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="buy-tab" data-bs-toggle="pill" data-bs-target="#buy" type="button">Buy</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="sell-tab" data-bs-toggle="pill" data-bs-target="#sell" type="button">Sell</button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content">
+                            <!-- Buy Form -->
+                            <div class="tab-pane fade show active" id="buy" role="tabpanel">
+                                <form id="buyForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Amount (BTC)</label>
+                                        <input type="number" class="form-control" id="buyAmount" step="0.0001" min="0.0001" placeholder="0.0000">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Price per BTC (USD)</label>
+                                        <input type="number" class="form-control" id="buyPrice" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Total Cost (USD)</label>
+                                        <input type="text" class="form-control" id="buyTotal" readonly>
+                                    </div>
+                                    <button type="submit" class="btn btn-buy w-100">
+                                        <i class="fas fa-shopping-cart"></i> Buy Bitcoin
+                                    </button>
+                                </form>
+                            </div>
+                            
+                            <!-- Sell Form -->
+                            <div class="tab-pane fade" id="sell" role="tabpanel">
+                                <form id="sellForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Amount (BTC)</label>
+                                        <input type="number" class="form-control" id="sellAmount" step="0.0001" min="0.0001" placeholder="0.0000">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Price per BTC (USD)</label>
+                                        <input type="number" class="form-control" id="sellPrice" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Total Receive (USD)</label>
+                                        <input type="text" class="form-control" id="sellTotal" readonly>
+                                    </div>
+                                    <button type="submit" class="btn btn-sell w-100">
+                                        <i class="fas fa-hand-holding-usd"></i> Sell Bitcoin
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-history"></i> Transaction History
+                    </div>
+                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                        <div id="transactionHistory">
+                            <p class="text-secondary text-center">No transactions yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Order Book & Market Stats -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-book"></i> Order Book
+                    </div>
+                    <div class="card-body p-0">
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            <div id="orderBook"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-bar"></i> Market Statistics
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-dark table-sm">
+                                <tbody>
+                                    <tr>
+                                        <td>24h Volume</td>
+                                        <td class="text-end"><span id="volume24h">$2.4B</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Market Cap</td>
+                                        <td class="text-end"><span id="marketCap">$890B</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Circulating Supply</td>
+                                        <td class="text-end"><span id="supply">19.2M BTC</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>All Time High</td>
+                                        <td class="text-end"><span id="ath">$69,000</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-newspaper"></i> Market News
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <small class="text-secondary">2 hours ago</small>
+                            <p class="mb-1">Bitcoin breaks resistance at $45,000</p>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-secondary">5 hours ago</small>
+                            <p class="mb-1">Major institution announces BTC holdings</p>
+                        </div>
+                        <div>
+                            <small class="text-secondary">8 hours ago</small>
+                            <p class="mb-1">Trading volume reaches new monthly high</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Mock API and Trading System
+        class BitcoinExchange {
+            constructor() {
+                this.basePrice = 45230.50;
+                this.currentPrice = this.basePrice;
+                this.userBalance = 10000.00;
+                this.userBTC = 0.5000;
+                this.priceHistory = [];
+                this.orderBook = { buy: [], sell: [] };
+                this.transactions = [];
+                
+                this.initializePriceHistory();
+                this.generateOrderBook();
+                this.startPriceUpdates();
+                this.setupEventListeners();
+                this.updateUI();
+            }
+
+            initializePriceHistory() {
+                for (let i = 0; i < 24; i++) {
+                    const variation = (Math.random() - 0.5) * 1000;
+                    this.priceHistory.push(this.basePrice + variation);
+                }
+            }
+
+            generateOrderBook() {
+                // Generate buy orders (bids)
+                for (let i = 0; i < 10; i++) {
+                    this.orderBook.buy.push({
+                        price: this.currentPrice - (i * 50) - Math.random() * 50,
+                        amount: (Math.random() * 2).toFixed(4)
+                    });
+                }
+
+                // Generate sell orders (asks)
+                for (let i = 0; i < 10; i++) {
+                    this.orderBook.sell.push({
+                        price: this.currentPrice + (i * 50) + Math.random() * 50,
+                        amount: (Math.random() * 2).toFixed(4)
+                    });
+                }
+            }
+
+            startPriceUpdates() {
+                setInterval(() => {
+                    const change = (Math.random() - 0.5) * 100;
+                    this.currentPrice += change;
+                    this.priceHistory.shift();
+                    this.priceHistory.push(this.currentPrice);
+                    this.generateOrderBook();
+                    this.updateUI();
+                }, 3000);
+            }
+
+            setupEventListeners() {
+                document.getElementById('buyAmount').addEventListener('input', () => this.calculateBuyTotal());
+                document.getElementById('sellAmount').addEventListener('input', () => this.calculateSellTotal());
+                
+                document.getElementById('buyForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.executeBuy();
+                });
+
+                document.getElementById('sellForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.executeSell();
+                });
+            }
+
+            calculateBuyTotal() {
+                const amount = parseFloat(document.getElementById('buyAmount').value) || 0;
+                const total = amount * this.currentPrice;
+                document.getElementById('buyTotal').value = total.toFixed(2);
+            }
+
+            calculateSellTotal() {
+                const amount = parseFloat(document.getElementById('sellAmount').value) || 0;
+                const total = amount * this.currentPrice;
+                document.getElementById('sellTotal').value = total.toFixed(2);
+            }
+
+            executeBuy() {
+                const amount = parseFloat(document.getElementById('buyAmount').value);
+                const total = amount * this.currentPrice;
+
+                if (!amount || amount <= 0) {
+                    this.showNotification('Please enter a valid amount', 'warning');
+                    return;
+                }
+
+                if (total > this.userBalance) {
+                    this.showNotification('Insufficient USD balance', 'danger');
+                    return;
+                }
+
+                this.userBalance -= total;
+                this.userBTC += amount;
+                
+                this.transactions.unshift({
+                    type: 'buy',
+                    amount: amount,
+                    price: this.currentPrice,
+                    total: total,
+                    time: new Date()
+                });
+
+                this.showNotification(`Successfully bought ${amount.toFixed(4)} BTC`, 'success');
+                document.getElementById('buyForm').reset();
+                this.updateUI();
+            }
+
+            executeSell() {
+                const amount = parseFloat(document.getElementById('sellAmount').value);
+                const total = amount * this.currentPrice;
+
+                if (!amount || amount <= 0) {
+                    this.showNotification('Please enter a valid amount', 'warning');
+                    return;
+                }
+
+                if (amount > this.userBTC) {
+                    this.showNotification('Insufficient BTC balance', 'danger');
+                    return;
+                }
+
+                this.userBalance += total;
+                this.userBTC -= amount;
+                
+                this.transactions.unshift({
+                    type: 'sell',
+                    amount: amount,
+                    price: this.currentPrice,
+                    total: total,
+                    time: new Date()
+                });
+
+                this.showNotification(`Successfully sold ${amount.toFixed(4)} BTC`, 'success');
+                document.getElementById('sellForm').reset();
+                this.updateUI();
+            }
+
+            updateUI() {
+                // Update price
+                document.getElementById('currentPrice').textContent = `$${this.currentPrice.toFixed(2)}`;
+                document.getElementById('buyPrice').value = this.currentPrice.toFixed(2);
+                document.getElementById('sellPrice').value = this.currentPrice.toFixed(2);
+
+                // Update price change
+                const priceChange = ((this.currentPrice - this.basePrice) / this.basePrice * 100).toFixed(2);
+                const changeElement = document.getElementById('priceChange');
+                const isPositive = priceChange >= 0;
+                
+                changeElement.className = `price-change ${isPositive ? 'price-up' : 'price-down'}`;
+                changeElement.innerHTML = `<i class="fas fa-arrow-${isPositive ? 'up' : 'down'}"></i> ${isPositive ? '+' : ''}${priceChange}%`;
+
+                // Update 24h high/low
+                document.getElementById('high24h').textContent = Math.max(...this.priceHistory).toFixed(2);
+                document.getElementById('low24h').textContent = Math.min(...this.priceHistory).toFixed(2);
+
+                // Update balances
+                document.getElementById('userBalance').textContent = this.userBalance.toFixed(2);
+                document.getElementById('userBTC').textContent = this.userBTC.toFixed(4);
+                document.getElementById('usdBalance').textContent = this.userBalance.toFixed(0);
+                document.getElementById('btcBalance').textContent = this.userBTC.toFixed(4);
+
+                // Update chart
+                this.updateChart();
+
+                // Update order book
+                this.updateOrderBook();
+
+                // Update transaction history
+                this.updateTransactionHistory();
+            }
+
+            updateChart() {
+                const chart = document.getElementById('priceChart');
+                const max = Math.max(...this.priceHistory);
+                const min = Math.min(...this.priceHistory);
+                const range = max - min;
+
+                chart.innerHTML = this.priceHistory.map(price => {
+                    const height = ((price - min) / range) * 250 + 30;
+                    return `<div class="chart-bar" style="height: ${height}px" title="$${price.toFixed(2)}"></div>`;
+                }).join('');
+            }
+
+            updateOrderBook() {
+                const orderBookHTML = `
+                    <div class="p-2">
+                        <h6 class="text-success mb-2"><i class="fas fa-arrow-down"></i> Sell Orders</h6>
+                        ${this.orderBook.sell.slice(0, 5).reverse().map(order => `
+                            <div class="order-book-item sell-order">
+                                <span>$${order.price.toFixed(2)}</span>
+                                <span>${order.amount} BTC</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="p-2 border-top border-bottom" style="background: rgba(59, 130, 246, 0.1);">
+                        <div class="text-center fw-bold">$${this.currentPrice.toFixed(2)}</div>
+                    </div>
+                    <div class="p-2">
+                        <h6 class="text-danger mb-2"><i class="fas fa-arrow-up"></i> Buy Orders</h6>
+                        ${this.orderBook.buy.slice(0, 5).map(order => `
+                            <div class="order-book-item buy-order">
+                                <span>$${order.price.toFixed(2)}</span>
+                                <span>${order.amount} BTC</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                document.getElementById('orderBook').innerHTML = orderBookHTML;
+            }
+
+            updateTransactionHistory() {
+                if (this.transactions.length === 0) return;
+
+                const historyHTML = this.transactions.slice(0, 10).map(tx => `
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge ${tx.type === 'buy' ? 'bg-success' : 'bg-danger'}">
+                                ${tx.type.toUpperCase()}
+                            </span>
+                            <small class="text-secondary">${tx.time.toLocaleTimeString()}</small>
+                        </div>
+                        <div class="mt-1">
+                            <small>${tx.amount.toFixed(4)} BTC @ $${tx.price.toFixed(2)}</small>
+                        </div>
+                        <div>
+                            <strong>$${tx.total.toFixed(2)}</strong>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById('transactionHistory').innerHTML = historyHTML;
+            }
+
+            showNotification(message, type) {
+                const notification = document.createElement('div');
+                notification.className = `alert alert-${type} alert-dismissible fade show notification`;
+                notification.innerHTML = `
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                
+                document.getElementById('notificationContainer').appendChild(notification);
+
+                setTimeout(() => {
+                    notification.remove();
+                }, 5000);
+            }
+        }
+
+        // Initialize the exchange
+        const exchange = new BitcoinExchange();
+    </script>
+</body>
+</html>
